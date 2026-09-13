@@ -1,0 +1,105 @@
+import AppKit
+
+func runDesktopNotesTests() throws {
+    func check(_ ok: @autoclosure () -> Bool, _ message: String) throws {
+        guard ok() else { throw NSError(domain: "DesktopNotesTests", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+        print("PASS: \(message)")
+    }
+    let path = FileManager.default.temporaryDirectory.appendingPathComponent("DeskNotes-desktop-\(UUID())")
+    defer { try? FileManager.default.removeItem(at: path) }
+    let store = try NoteStore(directory: path)
+    let a = Note(text: "自由贴纸测试"), b = Note(text: "侧边测试")
+    store.book.notes = [a, b]
+    let controller = AppDelegate(store: store); controller.syncEnabled = false; controller.animateDesktopVisibility = false
+    controller.panel = EdgePanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+    defer { controller.panel.orderOut(nil); controller.desktopPanels.values.forEach { $0.orderOut(nil) } }
+    controller.refresh()
+    let card = controller.cards[a.id]!
+    let editor = card.editor
+    let target = NSScreen.screens[0].visibleFrame
+    controller.dragCard(a.id, topLeft: NSPoint(x: target.midX, y: target.maxY - 60))
+    controller.finishDesktopDrag(a.id)
+    let initialFrame = controller.desktopPanels[a.id]!.frame
+    controller.dragCard(a.id, topLeft: NSPoint(x: target.maxX - 50, y: target.maxY - 60))
+    try check(controller.desktopPanels[a.id]!.frame.maxX > target.maxX, "拖动途中允许跨越屏幕边缘，不被整张便笺边界卡住")
+    controller.dragCard(a.id, topLeft: NSPoint(x: initialFrame.minX, y: initialFrame.maxY))
+    controller.finishDesktopDrag(a.id)
+    try check(store.note(a.id)?.screenAnchor != nil, "松手后记录实际显示器位置")
+    try check(controller.desktopPanels[a.id]?.isVisible == true && card.window === controller.desktopPanels[a.id], "拖出后成为独立原生便笺窗口")
+    try check(controller.cards[a.id] === card && card.editor === editor && editor.string == a.text, "拖动复用原编辑器并保留正文")
+    try check(controller.cards[b.id]?.superview === controller.document, "其他便笺仍保留在侧边")
+    controller.edgeState.concealed = true; controller.updateVisibility()
+    try check(controller.desktopPanels[a.id]?.isVisible == false, "未钉住的桌面贴纸随侧边自动隐藏")
+    controller.refresh()
+    try check(controller.desktopPanels[a.id]?.isVisible == false, "后台刷新不会重新唤出隐藏的贴纸")
+    controller.openFromHandle()
+    let center = NSPoint(x: controller.desktopPanels[a.id]!.frame.midX, y: controller.desktopPanels[a.id]!.frame.midY)
+    controller.checkAutoHide(at: center, now: 10)
+    controller.checkAutoHide(at: center, now: 11)
+    try check(!controller.edgeState.concealed, "鼠标在自由贴纸内时保持显示")
+    let nearEdge = NSPoint(x: controller.desktopPanels[a.id]!.frame.maxX + 60, y: center.y)
+    controller.checkAutoHide(at: nearEdge, now: 11.1)
+    controller.checkAutoHide(at: nearEdge, now: 11.9)
+    try check(!controller.edgeState.concealed, "鼠标越出便笺 60 pt 仍保持显示")
+    controller.checkAutoHide(at: NSPoint(x: -99999, y: -99999), now: 12)
+    controller.checkAutoHide(at: NSPoint(x: -99999, y: -99999), now: 12.7)
+    try check(controller.desktopPanels[a.id]?.isVisible == false, "鼠标移出自由贴纸超过延迟后收起")
+    controller.openFromHandle()
+    card.pinButton.performClick(nil)
+    controller.edgeState.concealed = true; controller.updateVisibility()
+    try check(store.note(a.id)?.isPinned == true && controller.desktopPanels[a.id]?.isVisible == true, "钉子按钮让当前贴纸保持显示")
+    try store.flush()
+    let pinnedReload = try NoteStore(directory: path)
+    try check(pinnedReload.note(a.id)?.isPinned == true && pinnedReload.note(b.id)?.isPinned == false, "钉住状态持久保存且旧便笺默认未钉住")
+    let restart = AppDelegate(store: pinnedReload); restart.syncEnabled = false; restart.animateDesktopVisibility = false
+    restart.panel = EdgePanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+    restart.refresh()
+    try check(restart.desktopPanels[a.id]?.isVisible == true && !restart.panel.isVisible, "启动仅显示钉住的贴纸")
+    restart.store.update(a.id) { $0.pinned = false }; restart.refresh()
+    try check(restart.desktopPanels[a.id]?.isVisible == false, "启动默认隐藏未钉住的自由贴纸")
+    restart.desktopPanels.values.forEach { $0.orderOut(nil) }; restart.panel.orderOut(nil)
+    card.pinButton.performClick(nil)
+    try check(store.note(a.id)?.isPinned == false && !controller.edgeState.concealed, "取消钉住恢复移出隐藏而不立即消失")
+    let oldTop = controller.desktopPanels[a.id]!.frame.maxY
+    controller.resizeCard(a.id, size: NSSize(width: 400, height: 350))
+    try check(controller.desktopPanels[a.id]?.frame.width == 400 && controller.desktopPanels[a.id]?.frame.maxY == oldTop, "自由贴纸向右下调整大小且顶边稳定")
+    controller.toggleFold(a.id)
+    try check(controller.desktopPanels[a.id]?.frame.height == 32, "桌面贴纸可独立折叠")
+    controller.toggleFold(a.id)
+    controller.hidden = true; controller.refresh()
+    try check(controller.desktopPanels[a.id]?.isVisible == false, "明确隐藏操作同时隐藏桌面贴纸")
+    controller.openFromHandle()
+    try check(controller.desktopPanels[a.id]?.isVisible == true, "点击图标恢复桌面贴纸")
+    try store.flush()
+    let reloaded = try NoteStore(directory: path)
+    try check(reloaded.note(a.id)?.desktopPosition == store.note(a.id)?.desktopPosition && reloaded.note(b.id)?.desktopPosition == nil, "位置保存重开且兼容侧边便笺")
+    controller.dockCard(a.id)
+    try check(controller.desktopPanels[a.id] == nil && card.superview === controller.document && store.note(a.id)?.desktopPosition == nil, "收回侧边复用原便笺且清理独立窗口")
+    controller.detachCard(a.id); controller.archive(a.id)
+    try check(controller.desktopPanels[a.id] == nil && controller.cards[a.id] == nil, "收走桌面贴纸时移除窗口")
+    // Real hit testing across two independent windows: B is editing, A must accept the first press.
+    controller.restore(a.id)
+    controller.dragCard(a.id, topLeft: NSPoint(x: target.minX + 30, y: target.maxY - 60))
+    controller.dragCard(b.id, topLeft: NSPoint(x: target.midX, y: target.maxY - 60))
+    controller.focus(b.id)
+    controller.refresh()
+    let inactiveCard = controller.cards[a.id]!
+    controller.toggleFold(a.id)
+    inactiveCard.layoutSubtreeIfNeeded()
+    let other = controller.cards[b.id]!
+    other.window?.makeKey(); other.window?.makeFirstResponder(other.editor)
+    let caption = inactiveCard.foldLabel.convert(NSPoint(x: 5, y: 5), to: inactiveCard)
+    let targetView = inactiveCard.hitTest(caption)
+    try check(other.window?.isKeyWindow == true && inactiveCard.window?.isKeyWindow == false, "另一张独立便笺正在编辑的测试前提")
+    try check(targetView === inactiveCard.header && targetView?.acceptsFirstMouse(for: nil) == true, "未激活便笺的标题文字命中可直接拖动的顶栏")
+    let buttonPoint = inactiveCard.pinButton.convert(NSPoint(x: 12, y: 12), to: inactiveCard)
+    try check(inactiveCard.hitTest(buttonPoint) === inactiveCard.pinButton, "顶栏拖动区域不会抢走钉子按钮点击")
+    controller.toggleFold(a.id); inactiveCard.layoutSubtreeIfNeeded()
+    let gripPoint = inactiveCard.grip.convert(NSPoint(x: 8, y: 8), to: inactiveCard)
+    try check(inactiveCard.hitTest(gripPoint) === inactiveCard.grip && inactiveCard.grip.acceptsFirstMouse(for: nil), "未激活便笺可直接拖动调整尺寸")
+    let screen = NSRect(x: -1200, y: 0, width: 1200, height: 800)
+    let frame = DesktopPlacement.frame(position: DesktopPosition(x: -1100, y: 700), size: NSSize(width: 280, height: 250), screens: [screen])
+    try check(frame.minX == -1100 && frame.maxY == 700, "支持左侧显示器的负坐标")
+    let recovered = DesktopPlacement.frame(position: DesktopPosition(x: 6000, y: 6000), size: frame.size, screens: [screen])
+    try check(screen.contains(recovered), "显示器断开后贴纸恢复到可见区域")
+}

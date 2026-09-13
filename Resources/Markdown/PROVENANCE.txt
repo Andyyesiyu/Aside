@@ -1,0 +1,5 @@
+markdown-it 15.0.2
+MIT License: ../Licenses/markdown-it-LICENSE.txt
+Source: https://registry.npmjs.org/markdown-it/-/markdown-it-15.0.2.tgz
+Package integrity verified against npm registry SHA-512.
+Bundled dist/browser/markdown-it.umd.min.js SHA-256: 635972b985228e8af9f0143647c68616b7a3bb09f6946e7e4a52e43dcf5e7be5

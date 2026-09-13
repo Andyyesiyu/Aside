@@ -1,0 +1,28 @@
+# macOS and local build outputs
+.DS_Store
+.build/
+build/
+DerivedData/
+*.app/
+*.zip
+*.dSYM/
+*.xcuserstate
+xcuserdata/
+
+# Local diagnostics, integration fixtures and user note data
+work/
+notebook*.json
+sync-backups/
+*-fixture.json
+*-result.txt
+signature-debug.json
+*.log
+
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.key
+*.mobileprovision
