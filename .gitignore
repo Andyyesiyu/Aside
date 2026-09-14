@@ -26,3 +26,7 @@ signature-debug.json
 *.pfx
 *.key
 *.mobileprovision
+
+# Python documentation checks
+__pycache__/
+*.pyc

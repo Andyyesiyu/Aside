@@ -40,3 +40,13 @@ bash build.sh .build/Aside.app
 - 面向其他用户分发时，再配置 Developer ID 签名及公证。目前构建脚本使用 ad-hoc 签名；代码推送本身不需要 Apple 开发者证书。
 
 项目名称：旁白 · Aside。仓库：`Andyyesiyu/Aside`，公开可见。提交使用 GitHub 隐私邮箱，源码许可证尚未选定。
+
+## 文档与决策检查
+
+```sh
+python3 scripts/check_notes.py
+python3 -m unittest discover -s scripts -p "test_*.py"
+python3 scripts/check_notes.py --base origin/main
+```
+
+GitHub Actions 的 Notes 工作流在 push / PR 上执行结构与基线检查。它不构建 macOS 应用，也不替代原生窗口回归。新增非平凡改动时，同时维护对应的活跃 Agent Note。

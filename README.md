@@ -4,6 +4,10 @@
 
 一个本地运行的 macOS 原生桌面便笺应用，原名「桌边 · DeskNotes」。当前提供自由贴纸与苹果备忘录同步，AI 功能尚在规划中。纸张配色、细边框和紧凑顶边参考 ryOS Stickies；正文使用 **Geneva + Fusion Pixel 简体中文，14 pt**（对应 macOS 界面的 14 个逻辑像素，Retina 屏幕不缩小为 7 pt）。
 
+## 产品意图与开发协作
+
+[会话整理与产品意图](docs/product-intent.md) 记录当前目标、交互约束与待设计的 AI 方向。[Agent Notes](.agents/notes/README.md) 保存决策、替代方案和验证边界，后续开发从 [AGENTS.md](AGENTS.md) 开始。
+
 ## 打开与使用
 
 双击同目录的 `Aside.app`。当前二进制适用于 Apple Silicon，macOS 13 或更高版本。应用驻留菜单栏，不占用 Dock。通过菜单栏的便笺图标进入新建、设置、备忘录连接、导出和退出。
