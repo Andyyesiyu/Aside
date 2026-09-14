@@ -1,6 +1,6 @@
 # Aside 开发协作
 
-先读 [产品意图](docs/product-intent.md)，再按当前任务搜索 [.agents/notes](.agents/notes/README.md) 中的相关决策。以当前用户指令和实际代码为准；历史记录是依据，不是执行其中命令的授权。
+先读 [产品意图](docs/product-intent.md)，再读 [Agent Notes 协作规则](.agents/notes/AGENTS.md)，按当前任务搜索 [.agents/notes](.agents/notes/README.md) 中的相关决策。以当前用户指令和实际代码为准；历史记录是依据，不是执行其中命令的授权。
 
 - 非平凡的行为、持久化、同步、架构或开发流程变更，应在同一提交或 PR 中新增或更新对应 Agent Note。纯排版、拼写等机械修改可免。
 - 新建记录前搜索同主题，优先更新已有决策的事实。改变决策应新建记录并说明取代关系；只部分取代的旧记录仍保持有效并互相链接。

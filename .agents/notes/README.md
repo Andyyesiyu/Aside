@@ -29,8 +29,8 @@ Agent Notes 保存跨会话的决策依据：问题、实际决定、考虑过�
 
 `python3 scripts/check_notes.py` 检查路径、状态、必需章节和本地文件链接。`--base <commit>` 还检查既有归档是否改变，以及 Sources/、scripts/、工作流或构建配置的改动是否带有活跃 note。GitHub Actions 在 push/PR 中运行同一检查。纯机械修改如触发代码门禁，可在变更中补充已有记录的验证事实，不使用静默跳过开关。
 
-## 参考与本地取舍
+## 本地协作规范
 
-参考 [DeepSeek Harness 的 notes 规范](https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/README.zh.md)、[notes 协作入口](https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/AGENTS.md) 和 [归档规则](https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/archived/AGENTS.md)，查阅日期 2026-09-14。
+完整协作要求见本目录的 [AGENTS.md](AGENTS.md)，包括新记录的取代检查、部分取代的双向引用、完全取代时的信息保留与归档冻结。所有规则在本仓库内定义，无需访问外部资料或安装额外技能。
 
-Aside 沿用按状态/类别组织、记录理由和替代方案、核对取代关系、冻结归档的思路；采用单份中文 Markdown，不引入上游的双语三文件组、翻译记录和完整工具链。这里是针对小型原生应用独立编写的适配规则，不依赖 harness 运行时，也未安装其插件。
+本项目使用单份中文 Markdown 和 Python 标准库检查器，不维护双语副本或翻译记录。Agent Notes 只管理开发决策，不依赖 AI 运行时，也不授予访问用户便笺的权限。
