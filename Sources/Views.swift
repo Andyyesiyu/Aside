@@ -27,6 +27,22 @@ final class NoteTextView: NSTextView {
     var openURL: (URL) -> Bool = { NSWorkspace.shared.open($0) }
     var richEditing = false
     var viewportRevealPending = false
+    private var resolvingViewportSize = false
+    override func setFrameSize(_ newSize: NSSize) {
+        guard !resolvingViewportSize, let scroll = enclosingScrollView,
+              let manager = layoutManager, let container = textContainer else {
+            super.setFrameSize(newSize); return
+        }
+        resolvingViewportSize = true
+        defer { resolvingViewportSize = false }
+        // NSTextView resizes itself during every edit. Keep its native resize and
+        // our post-layout reveal on the same bottom-padding policy, so NSClipView
+        // never clamps to a shorter document and then scrolls back down.
+        manager.ensureLayout(for: container)
+        let bottom = max(manager.usedRect(for: container).maxY, manager.extraLineFragmentRect.maxY)
+        let required = ceil(bottom + textContainerInset.height + max(textContainerInset.height, 24 / scroll.magnification))
+        super.setFrameSize(NSSize(width: newSize.width, height: max(newSize.height, required)))
+    }
     var lastKeyboardInput: TimeInterval = -.infinity
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if window?.firstResponder === self, event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,

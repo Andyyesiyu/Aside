@@ -39,6 +39,23 @@ func runLastLineTests() throws {
         editor.scrollRangeToVisible(editor.selectedRange()); settle()
         editor.insertText("末行输入", replacementRange: editor.selectedRange())
         verify("缩放 \(zoom) 的末行连续输入")
+        // Inspect intermediate positions, not only the final settled caret rectangle.
+        // Repeated edits on one short final line must not bounce the viewport upward.
+        editor.insertNewline(nil); settle()
+        editor.insertText("a", replacementRange: editor.selectedRange()); settle()
+        var positions: [CGFloat] = [card.scroll.contentView.bounds.minY]
+        card.scroll.contentView.postsBoundsChangedNotifications = true
+        let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification, object: card.scroll.contentView, queue: nil) { _ in
+            positions.append(card.scroll.contentView.bounds.minY)
+        }
+        for _ in 0..<3 {
+            editor.insertText("a", replacementRange: editor.selectedRange()); settle()
+        }
+        NotificationCenter.default.removeObserver(observer)
+        let retreat = zip(positions, positions.dropFirst()).map { ($0 - $1) * card.scroll.magnification }.max() ?? 0
+        let stable = retreat < 1
+        print("\(stable ? "PASS" : "FAIL"): 缩放 \(zoom) 连续输入无上下震荡; retreat=\(retreat), positions=\(positions)")
+        if !stable { failures.append("缩放 \(zoom) 连续输入震荡") }
         editor.insertNewline(nil)
         verify("缩放 \(zoom) 的末尾空行")
         editor.insertText("新增最后一行", replacementRange: editor.selectedRange())
