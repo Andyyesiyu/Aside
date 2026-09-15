@@ -72,10 +72,12 @@ extension AppDelegate {
                 self.store.book.preferences.screenID = id
                 self.toggleFixedPresentation()
             }
-            handle.isFixedMode = store.book.preferences.fixedMode
-            handle.onToggleFixedMode = { [weak self] in
-                guard let self = self else { return }
-                self.setFixedMode(!self.store.book.preferences.fixedMode)
+            handle.menuProvider = { [weak self] in
+                let menu = NSMenu()
+                guard let self = self else { return menu }
+                menu.delegate = self
+                self.menuNeedsUpdate(menu)
+                return menu
             }
             handle.onPositionChanged = { [weak self] position in
                 self?.store.book.preferences.handlePositions[id] = position

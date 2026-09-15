@@ -23,13 +23,20 @@ func runFixedModeTests() throws {
     owner.checkAutoHide(at: NSPoint(x: -99999, y: -99999), now: 1)
     owner.checkAutoHide(at: NSPoint(x: -99999, y: -99999), now: 100)
     try check(!owner.edgeState.concealed && owner.panel.isVisible, "固定模式移出后不隐藏")
-    try check(owner.edgeHandle!.makeContextMenu().items[0].state == .on, "图标右键菜单显示固定模式勾选")
+    let statusMenu = NSMenu(); owner.menuNeedsUpdate(statusMenu)
+    let iconMenu = owner.edgeHandle!.makeContextMenu()
+    try check(iconMenu.items.map(\.title) == statusMenu.items.map(\.title), "图标右键与顶部菜单内容一致")
+    try check(!iconMenu.items.contains { $0.title == "固定模式（全部展开并保持显示）" }, "右键菜单不再单独显示固定模式")
     try owner.store.flush()
     let loaded = try NoteStore(directory: owner.store.directory)
     try check(loaded.book.preferences.fixedMode && !loaded.book.preferences.shouldAutoHide, "固定模式重启后保留")
     owner.setFixedMode(false)
     try check(owner.store.book.preferences.autoHide && owner.store.book.preferences.shouldAutoHide, "退出固定模式恢复原自动隐藏设置")
-    try check(owner.edgeHandle!.makeContextMenu().items[0].state == .off, "退出后菜单取消勾选")
+    let newItem = owner.edgeHandle!.makeContextMenu().items.first { $0.title == "新建便笺" }!
+    let count = owner.store.book.notes.count
+    (newItem.representedObject as? MenuAction)?.handler()
+    try check(owner.store.book.notes.count == count + 1, "图标菜单新建操作可用")
+    try check(owner.edgeHandle!.makeContextMenu().items.contains { $0.title == owner.store.book.notes.last!.title }, "图标菜单重新打开更新便笺列表")
     owner.store.book.preferences.autoHide = false
     owner.setFixedMode(true); owner.setFixedMode(false)
     try check(!owner.store.book.preferences.autoHide, "原本关闭自动隐藏的偏好不被覆盖")

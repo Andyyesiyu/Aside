@@ -10,8 +10,7 @@ final class EdgeHandle: NSObject {
     private let button: EdgeHandleButton
     var onOpen: (() -> Void)?
     var onCommandClick: (() -> Void)?
-    var isFixedMode = false
-    var onToggleFixedMode: (() -> Void)?
+    var menuProvider: (() -> NSMenu)?
     var onPositionChanged: ((Double) -> Void)?
     private var screenFrame = NSRect.zero
     private var dragStartY: CGFloat = 0
@@ -26,7 +25,7 @@ final class EdgeHandle: NSObject {
         window.hasShadow = false; window.hidesOnDeactivate = false
         window.isReleasedWhenClosed = false; window.animationBehavior = .none
         button.title = ""; button.isBordered = false
-        button.toolTip = "单击打开便笺；⌘点击全部固定展开／隐藏；右键固定模式；上下拖动调整位置"
+        button.toolTip = "单击打开便笺；⌘点击全部固定展开／隐藏；右键打开应用菜单；上下拖动调整位置"
         button.setAccessibilityLabel("打开旁白便笺")
         button.target = self; button.action = #selector(openNotes)
         button.onCommandClick = { [weak self] in self?.onCommandClick?() }
@@ -44,14 +43,7 @@ final class EdgeHandle: NSObject {
             self.onPositionChanged?(ratio)
         }
     }
-    func makeContextMenu() -> NSMenu {
-        let menu = NSMenu()
-        let item = NSMenuItem(title: "固定模式（全部展开并保持显示）", action: #selector(toggleFixedMode), keyEquivalent: "")
-        item.target = self; item.state = isFixedMode ? .on : .off
-        menu.addItem(item)
-        return menu
-    }
-    @objc private func toggleFixedMode() { onToggleFixedMode?() }
+    func makeContextMenu() -> NSMenu { menuProvider?() ?? NSMenu() }
     // Keep the launch position interactive for dismissal checks after its window hides.
     // This is only consulted while notes are already open; hovering never opens them.
     func containsPointer(_ point: NSPoint) -> Bool { window.frame.insetBy(dx: -10, dy: -10).contains(point) }
