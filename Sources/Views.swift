@@ -87,6 +87,23 @@ final class NoteTextView: NSTextView {
     }
     override func didChangeText() { super.didChangeText(); refreshLinks(); composeChanged?(); revealInsertionAfterLayout() }
     override func unmarkText() { super.unmarkText(); refreshLinks(); composeChanged?() }
+    override func deleteBackward(_ sender: Any?) {
+        let selection = selectedRange()
+        if richEditing, isEditable, !hasMarkedText(), selection.length == 0 {
+            let paragraph = (string as NSString).paragraphRange(for: selection)
+            let block = selection.location < (textStorage?.length ?? 0)
+                ? unpacked(textStorage?.attribute(.noteBlock, at: selection.location, effectiveRange: nil), as: BlockStyle.self)
+                : unpacked(typingAttributes[.noteBlock], as: BlockStyle.self)
+            if selection.location == paragraph.location, let tag = block?.tag,
+               tag.hasPrefix("h"), let level = Int(tag.dropFirst()), (1...6).contains(level) {
+                breakUndoCoalescing()
+                formatBlock("div")
+                breakUndoCoalescing()
+                return
+            }
+        }
+        super.deleteBackward(sender)
+    }
     override func insertTab(_ sender: Any?) {
         if !changeListDepth(increase: true) { super.insertTab(sender) }
     }

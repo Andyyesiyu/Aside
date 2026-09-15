@@ -135,7 +135,12 @@ extension NoteTextView {
         let previousSelection = selectedRange()
         undoManager?.registerUndo(withTarget: self) { $0.restoreFormatting(previous, selection: previousSelection) }
         textStorage?.setAttributedString(content)
-        setSelectedRange(selection); didChangeText()
+        setSelectedRange(selection)
+        if let storage = textStorage, storage.length > 0 {
+            typingAttributes = storage.attributes(at: min(selection.location, storage.length - 1), effectiveRange: nil)
+            refreshTypingStyle()
+        }
+        didChangeText()
     }
     func formatInline(_ key: WritableKeyPath<InlineStyle, Bool>) {
         guard isEditable, !hasMarkedText(), let storage = textStorage else { return }
@@ -174,10 +179,17 @@ extension NoteTextView {
             let rendered = RichDocument(blocks: [document.blocks[index]]).text
             let length = (rendered as NSString).length + 1
             if NSIntersectionRange(NSRange(location: position, length: length), whole).length > 0 || (whole.length == 0 && position == whole.location) {
+                let oldTag = document.blocks[index].style.tag
+                let leavingHeading = oldTag.hasPrefix("h") && Int(oldTag.dropFirst()) != nil && tag == "div"
                 document.blocks[index].style.tag = ["ul", "ol"].contains(tag) ? "li" : tag
                 for run in document.blocks[index].runs.indices {
                     document.blocks[index].runs[run].style.css["font-size"] = tag == "h1" ? "16px" : tag == "h2" ? "12px" : "9px"
-                    if tag == "h1" || tag == "h2" { document.blocks[index].runs[run].style.bold = true }
+                    // Heading weight is provided by its block tag, not permanent
+                    // inline bold that would survive conversion back to body text.
+                    if leavingHeading {
+                        document.blocks[index].runs[run].style.bold = false
+                        document.blocks[index].runs[run].style.css.removeValue(forKey: "font-size")
+                    }
                 }
                 document.blocks[index].style.lists = ["ul", "ol"].contains(tag) ? [ListContext(id: listID, tag: tag)] : []
             }
@@ -186,7 +198,9 @@ extension NoteTextView {
         undoManager?.registerUndo(withTarget: self) { $0.restoreFormatting(previous, selection: selection) }
         storage.setAttributedString(document.attributed())
         setSelectedRange(NSRange(location: min(selection.location, storage.length), length: 0))
-        if let last = document.blocks.last, selectedRange().location == storage.length {
+        if selectedRange().location < storage.length {
+            typingAttributes = storage.attributes(at: selectedRange().location, effectiveRange: nil)
+        } else if let last = document.blocks.last {
             typingAttributes = RichDocument.attributes(inline: last.runs.last?.style ?? InlineStyle(), block: last.style)
         }
         refreshTypingStyle(); didChangeText()

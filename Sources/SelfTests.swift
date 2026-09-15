@@ -80,6 +80,7 @@ func runSelfTests() throws {
     try runRichTests()
     try runMarkdownTests()
     try runHeadingTests()
+    try runHeadingReversalTests()
     try runSyncSafetyTests()
     try runListIndentTests()
     try runOrderedMarkerTests()
