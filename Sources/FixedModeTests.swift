@@ -33,6 +33,12 @@ func runFixedModeTests() throws {
     owner.store.book.preferences.autoHide = false
     owner.setFixedMode(true); owner.setFixedMode(false)
     try check(!owner.store.book.preferences.autoHide, "原本关闭自动隐藏的偏好不被覆盖")
+    owner.toggleFixedPresentation()
+    try check(owner.store.book.preferences.fixedMode && owner.panel.isVisible, "Cmd 点击固定展开全部")
+    owner.toggleFixedPresentation()
+    try check(owner.hidden && !owner.panel.isVisible && !owner.store.book.preferences.fixedMode, "再次 Cmd 点击隐藏全部并退出固定模式")
+    owner.toggleFixedPresentation()
+    try check(!owner.hidden && owner.panel.isVisible && owner.store.book.preferences.fixedMode, "隐藏后 Cmd 点击可再次展开")
     let legacy = try JSONDecoder().decode(Preferences.self, from: Data("{}".utf8))
     try check(!legacy.fixedMode && legacy.shouldAutoHide, "旧版数据默认不开启固定模式")
     _ = store

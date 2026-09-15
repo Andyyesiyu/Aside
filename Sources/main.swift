@@ -2,6 +2,9 @@ import AppKit
 
 let app = NSApplication.shared
 TypeStyle.register()
+if CommandLine.arguments.contains("--handle-command-check") {
+    do { try runHandleDragTests(); try runFixedModeTests(); exit(0) } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
+}
 if CommandLine.arguments.contains("--heading-reversal-check") {
     do { try runHeadingReversalTests(); exit(0) } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
 }

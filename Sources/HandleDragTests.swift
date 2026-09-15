@@ -14,8 +14,8 @@ func runHandleDragTests() throws {
     let target = MenuAction { clicks += 1 }
     button.target = target; button.action = #selector(MenuAction.invoke(_:))
     button.onDrag = { delta = $0 }; button.onDrop = { drops += 1 }
-    func event(_ type: NSEvent.EventType, _ x: CGFloat, _ y: CGFloat) -> NSEvent {
-        NSEvent.mouseEvent(with: type, location: NSPoint(x: x, y: y), modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
+    func event(_ type: NSEvent.EventType, _ x: CGFloat, _ y: CGFloat, _ flags: NSEvent.ModifierFlags = []) -> NSEvent {
+        NSEvent.mouseEvent(with: type, location: NSPoint(x: x, y: y), modifierFlags: flags, timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
     }
     button.mouseDown(with: event(.leftMouseDown, 20, 20))
     button.mouseUp(with: event(.leftMouseUp, 20, 20))
@@ -28,6 +28,18 @@ func runHandleDragTests() throws {
     button.mouseDragged(with: event(.leftMouseDragged, 20, 100))
     button.mouseUp(with: event(.leftMouseUp, 20, 100))
     try check(clicks == 2 && drops == 1 && delta == 80 && !button.dragging, "拖动图标记录位移且松手不误展开")
+    var commandClicks = 0
+    button.onCommandClick = { commandClicks += 1 }
+    button.mouseDown(with: event(.leftMouseDown, 20, 20, .command))
+    button.mouseUp(with: event(.leftMouseUp, 20, 20))
+    try check(commandClicks == 1 && clicks == 2, "Cmd 点击单独触发，不执行普通打开")
+    button.mouseDown(with: event(.leftMouseDown, 20, 20, .command))
+    button.mouseDragged(with: event(.leftMouseDragged, 20, 100, .command))
+    button.mouseUp(with: event(.leftMouseUp, 20, 100, .command))
+    try check(commandClicks == 1 && drops == 2, "Cmd 拖动不误触发显示切换")
+    button.mouseDown(with: event(.leftMouseDown, 20, 20))
+    button.mouseUp(with: event(.leftMouseUp, 20, 20))
+    try check(clicks == 3 && commandClicks == 1, "Cmd 点击后普通点击正常")
     let screen = NSRect(x: -1920, y: -300, width: 1920, height: 1080)
     try check(HandlePlacement.clampedY(-9999, screen: screen) == screen.minY && HandlePlacement.clampedY(9999, screen: screen) == screen.maxY - 48, "图标无法拖出屏幕上下边界")
     let y = HandlePlacement.y(position: 0.4, screen: screen)

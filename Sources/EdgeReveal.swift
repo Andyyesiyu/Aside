@@ -67,6 +67,11 @@ extension AppDelegate {
                 guard let self = self else { return }
                 self.store.book.preferences.screenID = id; self.store.saveSoon(); self.openFromHandle()
             }
+            handle.onCommandClick = { [weak self] in
+                guard let self = self else { return }
+                self.store.book.preferences.screenID = id
+                self.toggleFixedPresentation()
+            }
             handle.isFixedMode = store.book.preferences.fixedMode
             handle.onToggleFixedMode = { [weak self] in
                 guard let self = self else { return }
@@ -85,6 +90,16 @@ extension AppDelegate {
         } else if concealed {
             panel.orderOut(nil)
         } else if !panel.isVisible { panel.orderFrontRegardless() }
+    }
+    func toggleFixedPresentation() {
+        if store.book.preferences.fixedMode && !hidden {
+            store.book.preferences.fixedMode = false
+            hidden = true
+            edgeState = EdgeReveal(concealed: true)
+            settingsChanged()
+        } else {
+            setFixedMode(true)
+        }
     }
     func setFixedMode(_ enabled: Bool) {
         store.book.preferences.fixedMode = enabled

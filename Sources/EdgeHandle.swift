@@ -9,6 +9,7 @@ final class EdgeHandle: NSObject {
     private let window: NSPanel
     private let button: EdgeHandleButton
     var onOpen: (() -> Void)?
+    var onCommandClick: (() -> Void)?
     var isFixedMode = false
     var onToggleFixedMode: (() -> Void)?
     var onPositionChanged: ((Double) -> Void)?
@@ -25,9 +26,10 @@ final class EdgeHandle: NSObject {
         window.hasShadow = false; window.hidesOnDeactivate = false
         window.isReleasedWhenClosed = false; window.animationBehavior = .none
         button.title = ""; button.isBordered = false
-        button.toolTip = "单击打开便笺；右键切换固定模式；上下拖动调整位置 · ⌃⌥N"
+        button.toolTip = "单击打开便笺；⌘点击全部固定展开／隐藏；右键固定模式；上下拖动调整位置"
         button.setAccessibilityLabel("打开旁白便笺")
         button.target = self; button.action = #selector(openNotes)
+        button.onCommandClick = { [weak self] in self?.onCommandClick?() }
         button.contextMenu = { [weak self] in self?.makeContextMenu() }
         window.contentView = button
         button.onPress = { [weak self] in self?.dragStartY = self?.window.frame.minY ?? 0 }
@@ -69,6 +71,8 @@ final class EdgeHandle: NSObject {
 }
 
 final class EdgeHandleButton: NSButton {
+    var onCommandClick: (() -> Void)?
+    private var commandPressed = false
     var contextMenu: (() -> NSMenu?)?
     override func menu(for event: NSEvent) -> NSMenu? { contextMenu?() ?? super.menu(for: event) }
     var onPress: (() -> Void)?
@@ -82,6 +86,7 @@ final class EdgeHandleButton: NSButton {
     override func mouseDown(with event: NSEvent) {
         guard isEnabled else { return }
         pressPoint = globalPoint(event); dragging = false
+        commandPressed = event.modifierFlags.contains(.command)
         highlight(true); onPress?()
     }
     override func mouseDragged(with event: NSEvent) {
@@ -96,7 +101,11 @@ final class EdgeHandleButton: NSButton {
         let wasDragging = dragging
         pressPoint = nil; highlight(false)
         if wasDragging { onDrop?() }
-        else if bounds.contains(convert(event.locationInWindow, from: nil)) { _ = sendAction(action, to: target) }
+        else if bounds.contains(convert(event.locationInWindow, from: nil)) {
+            if commandPressed { onCommandClick?() }
+            else { _ = sendAction(action, to: target) }
+        }
+        commandPressed = false
         dragging = false
     }
     private var hovered = false
