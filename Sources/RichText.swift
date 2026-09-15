@@ -65,17 +65,45 @@ extension RichDocument {
     static func from(_ text: NSAttributedString, emptyBlock: BlockStyle = BlockStyle()) -> RichDocument {
         let ns = text.string as NSString
         var blocks: [RichBlock] = [], location = 0
+        // Edited marker text is authoritative. Split numbering runs when the user
+        // changes a number, rather than silently regenerating the old sequence.
+        var nextListID = 0
+        text.enumerateAttribute(.noteBlock, in: NSRange(location: 0, length: text.length)) { value, _, _ in
+            nextListID = max(nextListID, unpacked(value, as: BlockStyle.self)?.lists.map(\.id).max() ?? 0)
+        }
+        var mappedLists: [Int: ListContext] = [:], counters: [Int: Int] = [:]
         let lines = text.string.components(separatedBy: "\n")
         for (lineIndex, line) in lines.enumerated() {
             let length = (line as NSString).length
             let attrs = location < text.length ? text.attributes(at: location, effectiveRange: nil) : (lineIndex == lines.count - 1 && length == 0 ? [.noteBlock: packed(emptyBlock)] : [:])
             var style = unpacked(attrs[.noteBlock], as: BlockStyle.self) ?? emptyBlock
             var start = location
-            if attrs[.noteMarker] as? Bool == true {
-                let pattern = style.lists.last?.tag == "ol" ? #"^[0-9]+\. "# : "^• "
+            if let original = style.lists.last {
+                let pattern = original.tag == "ol" ? #"^[0-9]+\. "# : "^• "
                 let range = (line as NSString).range(of: pattern, options: .regularExpression)
-                if range.location == 0 { start += range.length }
-                else { style.lists = []; style.tag = "div" }
+                if range.location == 0 {
+                    style.lists = style.lists.map { mappedLists[$0.id] ?? $0 }
+                    if original.tag == "ol" {
+                        let digits = String(line.prefix(while: { $0.isNumber }))
+                        var list = style.lists.last!
+                        let expected = counters[list.id] ?? list.start
+                        // Unsupported/unfinished numeric text stays literal, never disappears.
+                        if let number = Int(digits), number < Int.max, String(number) == digits {
+                            if number != expected {
+                                nextListID += 1
+                                list = ListContext(id: nextListID, tag: "ol", start: number)
+                                mappedLists[original.id] = list
+                                style.lists[style.lists.count - 1] = list
+                            }
+                            counters[list.id] = number + 1
+                            start += range.length
+                        } else { style.lists = []; style.tag = "div" }
+                    } else { start += range.length }
+                } else {
+                    // Deleting the whole marker leaves inherited paragraph metadata
+                    // on the body. Do not resurrect the marker on the next refresh.
+                    style.lists = []; style.tag = "div"
+                }
             }
             var runs: [RichRun] = []
             text.enumerateAttributes(in: NSRange(location: start, length: location + length - start)) { attrs, range, _ in

@@ -81,5 +81,6 @@ func runSelfTests() throws {
     try runHeadingTests()
     try runSyncSafetyTests()
     try runListIndentTests()
+    try runOrderedMarkerTests()
     print("ALL TESTS PASSED")
 }

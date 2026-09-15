@@ -99,6 +99,15 @@ final class NoteTextView: NSTextView {
         let paragraph = ns.substring(with: ns.paragraphRange(for: selectedRange())).trimmingCharacters(in: .newlines)
         var block = unpacked(typingAttributes[.noteBlock], as: BlockStyle.self) ?? BlockStyle()
         let inline = unpacked(typingAttributes[.noteInline], as: InlineStyle.self) ?? InlineStyle()
+        // The user may have removed the marker while the paragraph still has
+        // inherited list attributes. Enter must respect the visible paragraph.
+        if let list = block.lists.last {
+            let pattern = list.tag == "ol" ? #"^[0-9]+\. "# : "^• "
+            if paragraph.range(of: pattern, options: .regularExpression) == nil {
+                block.lists = []; block.tag = "div"
+                typingAttributes = RichDocument.attributes(inline: inline, block: block)
+            }
+        }
         if let list = block.lists.last {
             let pattern = list.tag == "ol" ? #"^[0-9]+\. "# : "^• "
             let body = paragraph.replacingOccurrences(of: pattern, with: "", options: .regularExpression)

@@ -2,6 +2,9 @@ import AppKit
 
 let app = NSApplication.shared
 TypeStyle.register()
+if CommandLine.arguments.contains("--ordered-marker-check") {
+    do { try runOrderedMarkerTests(); exit(0) } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
+}
 if CommandLine.arguments.contains("--last-line-check") {
     do { try runLastLineTests(); exit(0) } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
 }
