@@ -9,6 +9,8 @@ final class EdgeHandle: NSObject {
     private let window: NSPanel
     private let button: EdgeHandleButton
     var onOpen: (() -> Void)?
+    var isFixedMode = false
+    var onToggleFixedMode: (() -> Void)?
     var onPositionChanged: ((Double) -> Void)?
     private var screenFrame = NSRect.zero
     private var dragStartY: CGFloat = 0
@@ -23,9 +25,10 @@ final class EdgeHandle: NSObject {
         window.hasShadow = false; window.hidesOnDeactivate = false
         window.isReleasedWhenClosed = false; window.animationBehavior = .none
         button.title = ""; button.isBordered = false
-        button.toolTip = "单击打开便笺；上下拖动调整位置 · ⌃⌥N"
+        button.toolTip = "单击打开便笺；右键切换固定模式；上下拖动调整位置 · ⌃⌥N"
         button.setAccessibilityLabel("打开旁白便笺")
         button.target = self; button.action = #selector(openNotes)
+        button.contextMenu = { [weak self] in self?.makeContextMenu() }
         window.contentView = button
         button.onPress = { [weak self] in self?.dragStartY = self?.window.frame.minY ?? 0 }
         button.onDrag = { [weak self] delta in
@@ -39,6 +42,14 @@ final class EdgeHandle: NSObject {
             self.onPositionChanged?(ratio)
         }
     }
+    func makeContextMenu() -> NSMenu {
+        let menu = NSMenu()
+        let item = NSMenuItem(title: "固定模式（全部展开并保持显示）", action: #selector(toggleFixedMode), keyEquivalent: "")
+        item.target = self; item.state = isFixedMode ? .on : .off
+        menu.addItem(item)
+        return menu
+    }
+    @objc private func toggleFixedMode() { onToggleFixedMode?() }
     // Keep the launch position interactive for dismissal checks after its window hides.
     // This is only consulted while notes are already open; hovering never opens them.
     func containsPointer(_ point: NSPoint) -> Bool { window.frame.insetBy(dx: -10, dy: -10).contains(point) }
@@ -58,6 +69,8 @@ final class EdgeHandle: NSObject {
 }
 
 final class EdgeHandleButton: NSButton {
+    var contextMenu: (() -> NSMenu?)?
+    override func menu(for event: NSEvent) -> NSMenu? { contextMenu?() ?? super.menu(for: event) }
     var onPress: (() -> Void)?
     var onDrag: ((CGFloat) -> Void)?
     var onDrop: (() -> Void)?

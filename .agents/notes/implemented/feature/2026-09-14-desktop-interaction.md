@@ -21,3 +21,9 @@ Status: implemented
 ## Verification
 
 实现见 [EdgeReveal](../../../../Sources/EdgeReveal.swift)、[DesktopNotes](../../../../Sources/DesktopNotes.swift)、[ScreenLayout](../../../../Sources/ScreenLayout.swift)。已有 [屏幕布局回归](../../../../Sources/ScreenLayoutTests.swift) 和 [缩放快捷键回归](../../../../Sources/ResizeShortcutTests.swift)。本次仅整理文档，未重新运行原生窗口测试；真实多屏体验尚未验收。
+
+## Maintenance
+
+2026-09-15 新增图标右键“固定模式（全部展开并保持显示）”。开启时取消未归档便笺及全局的折叠状态，显示侧边与自由便笺，暂停鼠标移出自动隐藏；保持图标可见以便取消。模式独立持久化，旧数据默认关闭，切换不修改单张钉住状态或原 autoHide 偏好。显式隐藏全部退出固定模式；普通自动隐藏仍遵循原规则。
+
+取代检查：为当前交互决策新增显式模式，同一记录补充事实，不取代默认隐藏行为，无需归档。[FixedModeTests](../../../../Sources/FixedModeTests.swift) 覆盖展开、移出保留、菜单状态、持久化与偏好恢复。2026-09-15 验证：8 项固定模式检查及完整 self-test 全部通过；使用合成数据和原生窗口，真实多显示器体验仍待实机验收。

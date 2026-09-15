@@ -76,6 +76,7 @@ func runSelfTests() throws {
     try runDesktopNotesTests()
     try runScreenLayoutTests()
     try runHandleDragTests()
+    try runFixedModeTests()
     try runRichTests()
     try runMarkdownTests()
     try runHeadingTests()

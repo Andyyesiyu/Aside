@@ -269,6 +269,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     func toggleVisible() {
         let shouldShow = hidden || (!(visibilityTransition?.targetVisible ?? panel.isVisible) && !desktopPanels.values.contains { $0.isVisible })
+        if !shouldShow && store.book.preferences.fixedMode {
+            store.book.preferences.fixedMode = false; store.saveSoon()
+        }
         hidden = !shouldShow
         edgeState.concealed = !shouldShow; edgeState.outsideSince = nil
         refresh()

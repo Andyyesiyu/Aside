@@ -52,6 +52,8 @@ struct Preferences: Codable {
     var floatOnTop = true
     var collapsed = false
     var autoHide = true
+    var fixedMode = false
+    var shouldAutoHide: Bool { autoHide && !fixedMode }
     var handlePositions: [String: Double] = [:]
 }
 
@@ -66,6 +68,7 @@ extension Preferences {
         floatOnTop = try c.decodeIfPresent(Bool.self, forKey: .floatOnTop) ?? true
         collapsed = try c.decodeIfPresent(Bool.self, forKey: .collapsed) ?? false
         autoHide = try c.decodeIfPresent(Bool.self, forKey: .autoHide) ?? true
+        fixedMode = try c.decodeIfPresent(Bool.self, forKey: .fixedMode) ?? false
         handlePositions = try c.decodeIfPresent([String: Double].self, forKey: .handlePositions) ?? [:]
     }
 }
